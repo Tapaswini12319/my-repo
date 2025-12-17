@@ -1,46 +1,32 @@
-version: "3.8"
+version: '3.9'
 
 services:
-  mongo:
-    image: mongo:6
-    container_name: mongo
-    volumes:
-      - mongo_data:/data/db
-    networks:
-      - mean-net
-
-  backend:
-    image: <dockerhub-username>/mean-backend:latest
-    container_name: backend
-    env_file:
-      - backend/.env
-    depends_on:
-      - mongo
-    networks:
-      - mean-net
-
   frontend:
-    image: <dockerhub-username>/mean-frontend:latest
-    container_name: frontend
-    depends_on:
-      - backend
-    networks:
-      - mean-net
-
-  nginx:
-    image: nginx:latest
-    container_name: nginx
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - "80:80"
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
-      - frontend
-    networks:
-      - mean-net
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5000:8080"  # Map host port 5000 to container port 8080
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URL=mongodb://mongo:27017/meancrud
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:6
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
 
 volumes:
-  mongo_data:
-
-networks:
-  mean-net:
+  mongo-data:
